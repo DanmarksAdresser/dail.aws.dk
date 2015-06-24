@@ -2,6 +2,7 @@ var valgtadresse= null;
 var map= null;
 var korttype= null;
 var geojsonlayer= null;
+var host= "http://dawa.aws.dk/";
 
 $( document ).on( "pageinit", "#soeg", function() {
 
@@ -22,7 +23,7 @@ $( document ).on( "pageinit", "#soeg", function() {
 
 
   function danAdresse(adresse) {
-    return adresse.adgangsadresse.vejstykke.navn + (adresse.adgangsadresse.husnr.length > 0?' '+adresse.adgangsadresse.husnr:"")  + (adresse.etage?', '+adresse.etage+'.':"") + (adresse.dør?' '+adresse.dør:"")+ "<br />" +(adresse.adgangsadresse.supplerendebynavn?' '+adresse.adgangsadresse.supplerendebynavn+"<br />":"") +  (adresse.adgangsadresse.postnummer?adresse.adgangsadresse.postnummer.nr+' '+adresse.adgangsadresse.postnummer.navn:"");
+    return adresse.adgangsadresse.vejstykke.navn + (adresse.adgangsadresse.husnr.length > 0?' '+adresse.adgangsadresse.husnr:"")  + (adresse.etage?', '+adresse.etage+'.':"") + (adresse.dør?' '+adresse.dør:"")+ "<br />" +(adresse.adgangsadresse.supplerendebynavn?' '+adresse.adgangsadresse.supplerendebynavn+"<br />":"") +  (adresse.adgangsadresse.postnummer?adresse.adgangsadresse.postnummer.nr+' '+adresse.adgangsadresse.postnummer.navn:"") +((adresse.status===3)?"<br/><em>(Foreløbig adresse)</em>":"");
   }
 
   function visAdresseInfo(url) {      
@@ -38,7 +39,7 @@ $( document ).on( "pageinit", "#soeg", function() {
       info.html( "" );
       info.append("<li id='adresse'><a href='#kort'><p><strong>" + danAdresse(adresse) + "</strong></p></a></li>");
       info.append("<li id='koordinat'><a href='#kort'><p><strong>Koordinat:</strong>: (" + adresse.adgangsadresse.adgangspunkt.koordinater[0] + ", " + adresse.adgangsadresse.adgangspunkt.koordinater[1] + ")</p></a></li>");
-      info.append("<li><p><strong>Matrikelnr: </strong>" + adresse.adgangsadresse.matrikelnr + "<br />" + "<strong>Landsejerlav:</strong> " + adresse.adgangsadresse.ejerlav.kode + " " + adresse.adgangsadresse.ejerlav.navn + "</p></li>");
+      info.append("<li id='matrikel'><a href='#kort'><p><strong>Matrikelnr: </strong>" + adresse.adgangsadresse.matrikelnr + "<br />" + "<strong>Landsejerlav:</strong> " + adresse.adgangsadresse.ejerlav.kode + " " + adresse.adgangsadresse.ejerlav.navn + "</p></a></li>");
       info.append("<li id='kommune'><a href='#kort'><p><strong>Kommune: </strong>" + adresse.adgangsadresse.kommune.kode + " "  + adresse.adgangsadresse.kommune.navn + "</p></a></li>");
       info.append("<li id='postnummer'><a href='#kort'><p><strong>Postnummer: </strong>" + adresse.adgangsadresse.postnummer.nr + " " + adresse.adgangsadresse.postnummer.navn + "</p></a></li>");
       info.append("<li id='sogn'><a href='#kort'><p><strong>Sogn: </strong>" + adresse.adgangsadresse.sogn.kode + " " + adresse.adgangsadresse.sogn.navn + "</p></a></li>");
@@ -46,6 +47,9 @@ $( document ).on( "pageinit", "#soeg", function() {
       info.append("<li id='retskreds'><a href='#kort'><p><strong>Retskreds: </strong>" + adresse.adgangsadresse.retskreds.kode + " " + adresse.adgangsadresse.retskreds.navn + "</p></a></li>");
       info.append("<li id='politikreds'><a href='#kort'><p><strong>Politikreds: </strong>" + adresse.adgangsadresse.politikreds.kode + " " + adresse.adgangsadresse.politikreds.navn + "</p></a></li>");
       info.append("<li id='opstillingskreds'><a href='#kort'><p><strong>Opstillingskreds: </strong>" + adresse.adgangsadresse.opstillingskreds.kode + " " + adresse.adgangsadresse.opstillingskreds.navn + "</p></a></li>");
+      if (adresse.adgangsadresse.zone) {
+        info.append("<li id='zone'><p><strong>Zone: </strong>" + adresse.adgangsadresse.zone + "</p></li>");
+      }
       info.listview( "refresh" );
     }); 
     $('#adresseinfo').on("click", "#adresse", function() {
@@ -53,6 +57,9 @@ $( document ).on( "pageinit", "#soeg", function() {
     }); 
     $('#adresseinfo').on("click", "#koordinat", function() {
       korttype= 'adresse';
+    }); 
+    $('#adresseinfo').on("click", "#matrikel", function() {
+      korttype= 'matrikel';
     });
     $('#adresseinfo').on("click", "#sogn", function() {
       korttype= 'sogn';
@@ -88,7 +95,7 @@ $( document ).on( "pageinit", "#soeg", function() {
     parametre.q= q;
     if (vejnavn) parametre.vejnavn= vejnavn;
     $.ajax({
-        url: "http://dawa.aws.dk/"+(vejnavn?"adresser":"vejnavne")+"/autocomplete",
+        url: host+(vejnavn?"adresser":"vejnavne")+"/autocomplete",
         dataType: "jsonp",
         data: parametre
     })
@@ -164,7 +171,10 @@ $(document).on('pageshow', '#kort', function(event, ui) {
   map._onResize();
   if (geojsonlayer) map.removeLayer(geojsonlayer);
   var url= null;
-  if (korttype==='sogn') {
+  if (korttype==='matrikel') {
+    url= aa.jordstykke.href;
+  } 
+  else if (korttype==='sogn') {
     url= aa.sogn.href;
   } 
   else if (korttype==='kommune') {
