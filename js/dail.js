@@ -2,7 +2,8 @@ var valgtadresse= null;
 var map= null;
 var korttype= null;
 var geojsonlayer= null;
-var host= "http://dawa.aws.dk/";
+var host= "http://dawa.aws.dk";
+var corssupported= "withCredentials" in (new XMLHttpRequest()); 
 
 $( document ).on( "pageinit", "#soeg", function() {
 
@@ -29,7 +30,7 @@ $( document ).on( "pageinit", "#soeg", function() {
   function visAdresseInfo(url) {      
     $.ajax({
       url: url,
-      dataType: "jsonp"
+        dataType: corssupported?"json":"jsonp",
     })
     .fail( function(jqXHR, textStatus) {
       alert(jqXHR.status + " " + jqXHR.statusText); // kaldes ikke ved jsonp
@@ -51,7 +52,10 @@ $( document ).on( "pageinit", "#soeg", function() {
         info.append("<li id='zone'><p><strong>Zone: </strong>" + adresse.adgangsadresse.zone + "</p></li>");
       }
       info.listview( "refresh" );
-    }); 
+    })
+    .fail(function( jqXHR, textStatus, errorThrown ) {
+      alert(jqXHR.responseText);
+    });; 
     $('#adresseinfo').on("click", "#adresse", function() {
       korttype= 'adresse';
     }); 
@@ -85,7 +89,7 @@ $( document ).on( "pageinit", "#soeg", function() {
   } 
 
 
-  function hentliste(q) {
+  function hentliste(q, caretpos) {
     info.html( "" );
     info.listview( "refresh" );
     ul.listview( "refresh" );
@@ -93,34 +97,41 @@ $( document ).on( "pageinit", "#soeg", function() {
     parametre.side= 1;
     parametre.per_side= 10;
     parametre.q= q;
-    if (vejnavn) parametre.vejnavn= vejnavn;
+    parametre.type= "adresse";
+    parametre.fuzzy= true;
+    parametre.caretpos= caretpos;
     $.ajax({
-        url: host+(vejnavn?"adresser":"vejnavne")+"/autocomplete",
-        dataType: "jsonp",
+        url: host+"/autocomplete",
+        dataType: corssupported?"json":"jsonp",
         data: parametre
     })
     .then( function ( response ) {
       if (response.length === 1) {
-        if ("adresse" in response[0]) {
-          visAdresseInfo(response[0].adresse.href);
-        } 
-        else {
-          vejnavn= response[0].tekst;
-          hentliste(q);
-        }              
-        input.val(response[0].tekst+" ");
-        input.focus();
+        valgt(response[0]);
       }
       else {
         $.each( response, function ( i, val ) {
-          ul.append("<li id='" + i + "'>" + val.tekst + "</li>");
+          ul.append("<li id='" + i + "'>" + val.forslagstekst + "</li>");
           $("#" + i).data("data",val);
           $("#" + i).bind("vclick", vælgItem(val));
         });
       }            
       ul.listview( "refresh" );
       ul.trigger( "updatelayout");
+    })
+    .fail(function( jqXHR, textStatus, errorThrown ) {
+      alert(jqXHR.responseText);
     });
+  }
+
+  function valgt(valg) {       
+    input.val(valg.tekst);
+    if (valg.type === "adresse" ) { 
+      visAdresseInfo(valg.data.href);
+    }
+    else {   
+      hentliste(valg.tekst, valg.caretpos); 
+    } 
   }
 
   function vælgItem(res) {
@@ -128,13 +139,8 @@ $( document ).on( "pageinit", "#soeg", function() {
       var valg= $(this).data("data");
       ul.html( "" );
       ul.listview( "refresh" );
-      if ("adresse" in valg) {
-        visAdresseInfo(valg.adresse.href);
-      }
-      else {          
-        vejnavn= valg.tekst;
-      }
-      input.val(valg.tekst+" ");
+      valgt(valg);
+      input.val(valg.tekst);
       input.focus(); 
       return false;
     };
@@ -149,7 +155,7 @@ $( document ).on( "pageinit", "#soeg", function() {
     ul.html( "" );
     if ( value && value.length > 1 ) {
       if (vejnavn && value.length < vejnavn.length) vejnavn= null;
-      hentliste(value);
+      hentliste(value,value.length);
     }
 
   });
