@@ -88,7 +88,6 @@ $( document ).on( "pageinit", "#soeg", function() {
     });
   } 
 
-
   function hentliste(q, caretpos) {
     info.html( "" );
     info.listview( "refresh" );
