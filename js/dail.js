@@ -8,8 +8,8 @@ var corssupported= "withCredentials" in (new XMLHttpRequest());
 $( document ).on( "pageinit", "#soeg", function() {
 
   var info= $("#adresseinfo"),
+      ul= $('#autocomplete'),
       vejnavn= null,
-      ul = null,
       input= null;
 
   map = L.map('map');
@@ -111,12 +111,12 @@ $( document ).on( "pageinit", "#soeg", function() {
       else {
         $.each( response, function ( i, val ) {
           ul.append("<li id='" + i + "'>" + val.forslagstekst + "</li>");
-          $("#" + i).data("data",val);
           $("#" + i).bind("vclick", vælgItem(val));
         });
       }            
       ul.listview( "refresh" );
-      ul.trigger( "updatelayout");
+      $('#autocomplete li').removeClass('hidden ui-screen-hidden');
+      //ul.trigger( "updatelayout");
     })
     .fail(function( jqXHR, textStatus, errorThrown ) {
       alert(jqXHR.responseText);
@@ -133,9 +133,8 @@ $( document ).on( "pageinit", "#soeg", function() {
     } 
   }
 
-  function vælgItem(res) {
+  function vælgItem(valg) {
     return function (e) {
-      var valg= $(this).data("data");
       ul.html( "" );
       ul.listview( "refresh" );
       valgt(valg);
@@ -153,7 +152,6 @@ $( document ).on( "pageinit", "#soeg", function() {
 
     ul.html( "" );
     if ( value && value.length > 1 ) {
-      if (vejnavn && value.length < vejnavn.length) vejnavn= null;
       hentliste(value,value.length);
     }
 
